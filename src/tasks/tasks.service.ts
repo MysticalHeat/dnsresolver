@@ -25,6 +25,7 @@ export class TasksService implements OnApplicationBootstrap {
 
         ch.consume(queue, async (msg) => {
             const content: {
+                taskId: string;
                 type:
                     | 'http-check'
                     | 'ping'
@@ -34,13 +35,24 @@ export class TasksService implements OnApplicationBootstrap {
                 payload: any;
             } = JSON.parse(msg!.content.toString());
 
+            ch.sendToQueue(
+                'results',
+                Buffer.from(
+                    JSON.stringify({
+                        agentId: process.env.AGENT_ID,
+                        status: 'initialized',
+                        taskId: content.taskId,
+                    }),
+                ),
+            );
+
             let result;
             switch (content.type) {
                 case 'http-check':
                     result = await this.httpCheck(content.payload.url);
                     break;
                 case 'ping':
-                    result = await this.ping(content.payload.url);
+                    result = await this.ping(content.payload.host);
                     break;
                 case 'tcp-check':
                     result = await this.tcpCheck(
@@ -63,7 +75,17 @@ export class TasksService implements OnApplicationBootstrap {
             );
 
             ch.ack(msg!);
-            ch.publish('results', '', Buffer.from(JSON.stringify(result)));
+            ch.sendToQueue(
+                'results',
+                Buffer.from(
+                    JSON.stringify({
+                        agentId: process.env.AGENT_ID,
+                        result,
+                        status: 'completed',
+                        taskId: content.taskId,
+                    }),
+                ),
+            );
         });
     }
 
