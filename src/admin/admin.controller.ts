@@ -4,6 +4,7 @@ import {
     Get,
     MessageEvent,
     Post,
+    Query,
     Res,
     Sse,
     UseGuards,
@@ -42,8 +43,8 @@ export class AdminController {
 
     @UseGuards(AdminGuard)
     @Sse('deploy-agent/stream')
-    stream(): Observable<MessageEvent> {
-        return this.adminService.getChannel('main').pipe(share());
+    stream(@Query('ip') ip: string): Observable<MessageEvent> {
+        return this.adminService.getChannel(`deploy-agent:${ip}`).pipe(share());
     }
 
     @UseGuards(AdminGuard)
