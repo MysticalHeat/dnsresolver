@@ -26,6 +26,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "amqplib": "^0.10.9",
     "axios": "^1.12.2",
+    "ipify": "^7.0.0",
     "ping": "^1.0.0",
     "redis": "^5.9.0",
     "reflect-metadata": "^0.2.2",

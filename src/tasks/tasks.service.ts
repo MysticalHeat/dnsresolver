@@ -5,16 +5,36 @@ import net from 'net';
 import dns from 'dns/promises';
 import traceroute from 'traceroute';
 import amqplib from 'amqplib';
+import ipify from 'ipify';
+import { agent } from 'supertest';
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
     async onApplicationBootstrap() {
-        const queue = `tasks:${process.env.AGENT_ID || 'default'}`;
+        const accessKey = process.env.ACCESS_KEY;
+        const accessSecret = process.env.ACCESS_SECRET;
+
+        const queue = `tasks:${accessKey || 'default'}`;
         const conn = await amqplib.connect(
-            process.env.RABBITMQ_URL || 'amqp://localhost',
+            `amqp://${accessKey}:${accessSecret}@${process.env.RABBITMQ_HOST}` ||
+                'amqp://localhost',
         );
 
         const ch = await conn.createChannel();
+
+        const ip = await ipify({ useIPv6: false });
+
+        ch.sendToQueue(
+            'agent-status',
+            Buffer.from(
+                JSON.stringify({
+                    ip,
+                    agentId: accessKey,
+                    status: 'online',
+                }),
+            ),
+        );
+
         await ch.assertExchange('tasks', 'fanout', { durable: true });
         await ch.assertQueue(queue, {
             durable: true,
