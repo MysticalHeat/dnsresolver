@@ -60,7 +60,7 @@ export class TasksService implements OnApplicationBootstrap {
                 'results',
                 Buffer.from(
                     JSON.stringify({
-                        agentId: process.env.AGENT_ID,
+                        agentId: process.env.ACCESS_KEY,
                         status: 'initialized',
                         taskId: content.taskId,
                     }),
@@ -100,7 +100,7 @@ export class TasksService implements OnApplicationBootstrap {
                 'results',
                 Buffer.from(
                     JSON.stringify({
-                        agentId: process.env.AGENT_ID,
+                        agentId: process.env.ACCESS_KEY,
                         result,
                         status: 'completed',
                         taskId: content.taskId,
