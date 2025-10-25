@@ -5,8 +5,10 @@ import {
     pgTable,
     primaryKey,
     text,
+    timestamp,
     uuid,
 } from 'drizzle-orm/pg-core';
+import { last } from 'rxjs';
 
 export const taskTypeEnum = pgEnum('task_type', [
     'http-check',
@@ -22,19 +24,29 @@ export const tasks = pgTable('tasks', {
         .default(sql`gen_random_uuid()`),
     type: taskTypeEnum().notNull(),
     input: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).defaultNow(),
 });
 
 export const tasksRelations = relations(tasks, ({ many }) => ({
     tasksToAgents: many(tasksToAgents),
 }));
 
+export const agentStatusEnum = pgEnum('agent_status', [
+    'created',
+    'online',
+    'offline',
+]);
+
 export const agents = pgTable('agents', {
     id: uuid()
         .primaryKey()
         .default(sql`gen_random_uuid()`),
-    ip: text().notNull(),
-    location: text().notNull(),
+    ip: text(),
+    location: text(),
     webhookUrl: text().notNull().default('http://localhost'),
+    status: agentStatusEnum().notNull().default('created'),
+    createdAt: timestamp({ withTimezone: true }).defaultNow(),
+    lastSeenAt: timestamp({ withTimezone: true }).defaultNow(),
 });
 
 export const agentsRelations = relations(agents, ({ many }) => ({
@@ -59,6 +71,7 @@ export const tasksToAgents = pgTable(
             .notNull(),
         status: tasksStatusEnum().notNull().default('pending'),
         result: jsonb(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow(),
     },
     (t) => [primaryKey({ columns: [t.taskId, t.agentId] })],
 );

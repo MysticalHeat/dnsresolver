@@ -12,14 +12,28 @@ import { DB } from 'src/db/db.types';
 import { agents, tasks, tasksToAgents } from 'src/db/db.schema';
 import { and, eq } from 'drizzle-orm';
 import { Observable, Subject } from 'rxjs';
+import { IpgeoService } from 'src/ipgeo/ipgeo.service';
+import { Cron } from '@nestjs/schedule';
+import axios, { AxiosInstance } from 'axios';
+
+import * as rmqConnectionsJson from './responses/rmq-connections.json';
 
 @Injectable()
 export class CoreService implements OnApplicationBootstrap {
-    constructor(@Inject(DrizzleAsyncProvider) private readonly db: DB) {}
+    constructor(
+        @Inject(DrizzleAsyncProvider) private readonly db: DB,
+        private readonly ipgeoService: IpgeoService,
+    ) {}
 
     private rmqChannel: amqplib.Channel;
+    private rmqHttp: AxiosInstance;
 
     async onApplicationBootstrap() {
+        this.rmqHttp = axios.create({
+            baseURL:
+                process.env.RABBITMQ_HTTP_URL || 'http://localhost:15672/api/',
+        });
+
         const queue = `results`;
         const conn = await amqplib.connect(
             process.env.RABBITMQ_URL || 'amqp://localhost',
@@ -102,6 +116,61 @@ export class CoreService implements OnApplicationBootstrap {
 
             this.rmqChannel.ack(msg!);
         });
+
+        await this.rmqChannel.assertQueue('agent-status', { durable: true });
+
+        await this.rmqChannel.consume('agent-status', async (msg) => {
+            const content: {
+                agentId: string;
+                status: 'online' | 'offline';
+                ip: string;
+            } = JSON.parse(msg!.content.toString());
+
+            const geo = await this.ipgeoService.getGeolocation(content.ip);
+
+            await this.db
+                .update(agents)
+                .set({
+                    status: content.status,
+                    ip: content.ip,
+                    location: `${geo.location.country_name}, ${geo.location.city}`,
+                    webhookUrl: `http://${content.ip}:3000`,
+                    lastSeenAt: new Date(),
+                })
+                .where(eq(agents.id, content.agentId));
+
+            this.rmqChannel.ack(msg!);
+        });
+    }
+
+    @Cron('0/15 * * * * *')
+    async heartbeat() {
+        const agentList = await this.db.query.agents.findMany();
+
+        const rmqConnections =
+            await this.rmqHttp.get<typeof rmqConnectionsJson>(`/connections`);
+
+        for (const agent of agentList) {
+            const isOnline = rmqConnections.data.find(
+                (conn) => conn.user === agent.id,
+            )
+                ? true
+                : false;
+
+            const existingStatus = agent.status === 'online';
+
+            if (existingStatus === false && isOnline === false) {
+                continue;
+            }
+
+            await this.db
+                .update(agents)
+                .set({
+                    status: isOnline ? 'online' : 'offline',
+                    lastSeenAt: new Date(),
+                })
+                .where(eq(agents.id, agent.id));
+        }
     }
 
     private channels = new Map<string, Subject<MessageEvent>>();

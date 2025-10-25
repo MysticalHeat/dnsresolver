@@ -29,4 +29,9 @@ export class CoreController {
     getTask(@Param('id') id: string) {
         return this.coreService.getTask(id);
     }
+
+    @Get('heartbeat')
+    heartbeat() {
+        return this.coreService.heartbeat();
+    }
 }
