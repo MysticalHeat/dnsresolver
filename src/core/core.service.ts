@@ -80,8 +80,12 @@ export class CoreService implements OnApplicationBootstrap {
                         .onConflictDoNothing();
 
                     this.sendToChannel(
-                        content.taskId,
-                        { agentId: content.agentId, type: task.type },
+                        'main',
+                        {
+                            taskId: content.taskId,
+                            agentId: content.agentId,
+                            type: task.type,
+                        },
                         'agent-initialized',
                     );
 
@@ -102,8 +106,9 @@ export class CoreService implements OnApplicationBootstrap {
                         );
 
                     this.sendToChannel(
-                        content.taskId,
+                        'main',
                         {
+                            taskId: content.taskId,
                             agentId: content.agentId,
                             result: content.result,
                             type: task.type,
@@ -175,15 +180,15 @@ export class CoreService implements OnApplicationBootstrap {
 
     private channels = new Map<string, Subject<MessageEvent>>();
 
-    getChannel(taskId: string): Observable<MessageEvent> {
-        if (!this.channels.has(taskId)) {
-            this.channels.set(taskId, new Subject<MessageEvent>());
+    getChannel(name: string): Observable<MessageEvent> {
+        if (!this.channels.has(name)) {
+            this.channels.set(name, new Subject<MessageEvent>());
         }
-        return this.channels.get(taskId)!.asObservable();
+        return this.channels.get(name)!.asObservable();
     }
 
-    sendToChannel(taskId: string, data: any, type?: string) {
-        const subject = this.channels.get(taskId);
+    sendToChannel(name: string, data: any, type?: string) {
+        const subject = this.channels.get(name);
         if (subject) {
             subject.next({ data, type });
         }

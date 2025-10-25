@@ -15,9 +15,9 @@ import { TaskType } from './core.types';
 export class CoreController {
     constructor(private readonly coreService: CoreService) {}
 
-    @Sse('task/:id/stream')
-    stream(@Param('id') id: string): Observable<MessageEvent> {
-        return this.coreService.getChannel(id).pipe(share());
+    @Sse('task/stream')
+    stream(): Observable<MessageEvent> {
+        return this.coreService.getChannel('main').pipe(share());
     }
 
     @Post('task')
