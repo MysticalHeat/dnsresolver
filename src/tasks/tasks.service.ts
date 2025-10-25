@@ -5,8 +5,6 @@ import net from 'net';
 import dns from 'dns/promises';
 import traceroute from 'traceroute';
 import amqplib from 'amqplib';
-import ipify from 'ipify';
-import { agent } from 'supertest';
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -22,7 +20,10 @@ export class TasksService implements OnApplicationBootstrap {
 
         const ch = await conn.createChannel();
 
-        const ip = await ipify({ useIPv6: false }).catch(() => 'not resolved');
+        const ip = await axios
+            .get<string>('https://api.ipify.org')
+            .then((res) => res.data)
+            .catch(() => 'not resolved');
 
         ch.sendToQueue(
             'agent-status',
