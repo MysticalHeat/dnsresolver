@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     MessageEvent,
     Post,
     Res,
@@ -43,5 +44,11 @@ export class AdminController {
     @Sse('deploy-agent/stream')
     stream(): Observable<MessageEvent> {
         return this.adminService.getChannel('main').pipe(share());
+    }
+
+    @UseGuards(AdminGuard)
+    @Get('ssh-key')
+    getSshKey() {
+        return this.adminService.getSshKey();
     }
 }

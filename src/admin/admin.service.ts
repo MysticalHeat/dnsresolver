@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import Ansible from 'node-ansible';
 import { AgentService } from 'src/agent/agent.service';
 import { Observable, Subject } from 'rxjs';
+import { readFile } from 'fs/promises';
 
 @Injectable()
 export class AdminService {
@@ -99,5 +100,12 @@ export class AdminService {
         command.inventory(`${ip},`).user(user).exec({
             cwd: './playbooks',
         });
+    }
+
+    async getSshKey() {
+        const key = await readFile('/root/.ssh/id_ed25519.pub', 'utf-8');
+        return {
+            key,
+        };
     }
 }
