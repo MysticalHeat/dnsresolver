@@ -103,7 +103,7 @@ export class AdminService {
     }
 
     async getSshKey() {
-        const key = await readFile('/root/.ssh/id_ed25519.pub', 'utf-8');
+        const key = await readFile(process.env.SSH_KEY_PATH!, 'utf-8');
         return {
             key,
         };
