@@ -1,6 +1,16 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    MessageEvent,
+    Post,
+    Res,
+    Sse,
+    UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Response } from 'express';
+import { Observable, share } from 'rxjs';
+import { AdminGuard } from './admin.guard';
 
 @Controller('admin')
 export class AdminController {
@@ -21,5 +31,17 @@ export class AdminController {
         res.cookie('jwt', jwt, {
             httpOnly: true,
         });
+    }
+
+    @UseGuards(AdminGuard)
+    @Post('deploy-agent')
+    deployAgent(@Body('ip') ip: string, @Body('user') user: string) {
+        return this.adminService.deployAgent(ip, user);
+    }
+
+    @UseGuards(AdminGuard)
+    @Sse('deploy-agent/stream')
+    stream(): Observable<MessageEvent> {
+        return this.adminService.getChannel('main').pipe(share());
     }
 }

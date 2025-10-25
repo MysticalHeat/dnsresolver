@@ -2,7 +2,7 @@ FROM node:22.10.0-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig*.json nest-cli* ./
+COPY package.json package-lock.json tsconfig*.json nest-cli* .ansible.cfg ./
 
 RUN npm ci 
 
@@ -10,9 +10,16 @@ COPY ./src ./src
 
 RUN npm run build
 
-FROM node:22.10.0-alpine AS image
+FROM node:22.10.0 AS image
 
 WORKDIR /app
+
+RUN apt update && apt-get install -y python3-launchpadlib software-properties-common && \
+    add-apt-repository --yes --update ppa:ansible/ansible && \
+    apt-get install -y ansible && \
+    ansible-galaxy collection install community.docker
+
+COPY --from=build /app/.ansible.cfg /root/.ansible.cfg
 
 COPY --from=build /app/package*.json ./
 

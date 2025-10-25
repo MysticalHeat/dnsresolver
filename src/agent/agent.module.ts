@@ -3,7 +3,8 @@ import { AgentService } from './agent.service';
 import { AgentController } from './agent.controller';
 
 @Module({
-  providers: [AgentService],
-  controllers: [AgentController]
+    providers: [AgentService],
+    controllers: [AgentController],
+    exports: [AgentService],
 })
 export class AgentModule {}

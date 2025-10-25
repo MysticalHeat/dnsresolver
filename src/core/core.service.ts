@@ -51,6 +51,7 @@ export class CoreService implements OnApplicationBootstrap {
                 agentId: string;
                 status: 'initialized' | 'completed' | 'failed';
                 result?: any;
+                body?: any;
             } = JSON.parse(msg!.content.toString());
 
             console.log(
@@ -115,6 +116,33 @@ export class CoreService implements OnApplicationBootstrap {
                             type: task.type,
                         },
                         'agent-completed',
+                    );
+
+                    break;
+
+                case 'failed':
+                    await this.db
+                        .update(tasksToAgents)
+                        .set({
+                            status: 'failed',
+                            result: content.body,
+                        })
+                        .where(
+                            and(
+                                eq(tasksToAgents.taskId, content.taskId),
+                                eq(tasksToAgents.agentId, content.agentId),
+                            ),
+                        );
+
+                    this.sendToChannel(
+                        'main',
+                        {
+                            taskId: content.taskId,
+                            agentId: content.agentId,
+                            result: content.body,
+                            type: task.type,
+                        },
+                        'agent-failed',
                     );
 
                     break;

@@ -2,6 +2,7 @@ import {
     BadRequestException,
     Inject,
     Injectable,
+    MessageEvent,
     UnauthorizedException,
 } from '@nestjs/common';
 import { DrizzleAsyncProvider } from 'src/db/db.provider';
@@ -10,12 +11,16 @@ import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { admin } from 'src/db/db.schema';
 import { JwtService } from '@nestjs/jwt';
+import Ansible from 'node-ansible';
+import { AgentService } from 'src/agent/agent.service';
+import { Observable, Subject } from 'rxjs';
 
 @Injectable()
 export class AdminService {
     constructor(
         @Inject(DrizzleAsyncProvider) private readonly db: DB,
         private readonly jwtService: JwtService,
+        private readonly agentService: AgentService,
     ) {}
 
     async hashPassword(password: string) {
@@ -34,7 +39,7 @@ export class AdminService {
         });
 
         if (!existingAdmin) {
-            throw new BadRequestException('Admin doesnot exist');
+            throw new BadRequestException('Admin does not exist');
         }
 
         const result = await bcrypt.compare(
@@ -52,5 +57,47 @@ export class AdminService {
                 expiresIn: '10h',
             },
         );
+    }
+    private channels = new Map<string, Subject<MessageEvent>>();
+
+    getChannel(name: string): Observable<MessageEvent> {
+        if (!this.channels.has(name)) {
+            this.channels.set(name, new Subject<MessageEvent>());
+        }
+        return this.channels.get(name)!.asObservable();
+    }
+
+    sendToChannel(name: string, data: any, type?: string) {
+        const subject = this.channels.get(name);
+        if (subject) {
+            subject.next({ data, type });
+        }
+    }
+
+    async deployAgent(ip: string, user: string) {
+        const agent = await this.agentService.createAgent();
+
+        const command = new Ansible.Playbook()
+            .playbook('deploy-agent')
+            .variables({
+                docker_password: process.env.PAT_TOKEN,
+                access_key: agent.accessKey,
+                access_secret: agent.accessSecret,
+                user,
+            });
+
+        command.on('stdout', (data) => {
+            console.log(data.toString());
+            this.sendToChannel(`deploy-agent:${ip}`, data.toString());
+        });
+
+        command.on('stderr', (data) => {
+            console.log(data.toString());
+            this.sendToChannel(`deploy-agent:${ip}`, data.toString());
+        });
+
+        command.inventory(`${ip},`).user(user).exec({
+            cwd: './playbooks',
+        });
     }
 }
