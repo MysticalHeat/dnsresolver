@@ -14,7 +14,8 @@ FROM node:22.10.0 AS image
 
 WORKDIR /app
 
-RUN apt update && apt install -y traceroute
+RUN apt update && apt install -y traceroute iputils-ping \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/package*.json ./
 
