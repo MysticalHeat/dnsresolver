@@ -5,6 +5,8 @@ import { DbModule } from './db/db.module';
 import { AgentModule } from './agent/agent.module';
 import { IpgeoModule } from './ipgeo/ipgeo.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminModule } from './admin/admin.module';
+import { JwtModule } from '@nestjs/jwt';
 @Module({
     imports: [
         ScheduleModule.forRoot(),
@@ -13,6 +15,11 @@ import { ScheduleModule } from '@nestjs/schedule';
         DbModule,
         AgentModule,
         IpgeoModule,
+        AdminModule,
+        JwtModule.register({
+            global: true,
+            secret: process.env.JWT_CONSTANT,
+        }),
     ],
 })
 export class AppModule {}

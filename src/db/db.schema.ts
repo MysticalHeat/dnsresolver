@@ -8,7 +8,6 @@ import {
     timestamp,
     uuid,
 } from 'drizzle-orm/pg-core';
-import { last } from 'rxjs';
 
 export const taskTypeEnum = pgEnum('task_type', [
     'http-check',
@@ -86,3 +85,8 @@ export const tasksToAgentsRelations = relations(tasksToAgents, ({ one }) => ({
         references: [agents.id],
     }),
 }));
+
+export const admin = pgTable('admin', {
+    login: text().primaryKey(),
+    passwordHash: text().notNull(),
+});

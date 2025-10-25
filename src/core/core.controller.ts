@@ -5,6 +5,7 @@ import {
     MessageEvent,
     Param,
     Post,
+    Query,
     Sse,
 } from '@nestjs/common';
 import { CoreService } from './core.service';
@@ -25,6 +26,16 @@ export class CoreController {
         return this.coreService.createTask(url, type);
     }
 
+    @Get('task/list')
+    getTasksByAgent(@Query('agentId') agentId: string) {
+        return this.coreService.getTasksByAgent(agentId);
+    }
+
+    @Get('task/daily-stats')
+    getDailyStats(@Query('agentId') agentId: string) {
+        return this.coreService.getDailyTaskCount(agentId);
+    }
+
     @Get('task/:id')
     getTask(@Param('id') id: string) {
         return this.coreService.getTask(id);
@@ -33,5 +44,10 @@ export class CoreController {
     @Get('heartbeat')
     heartbeat() {
         return this.coreService.heartbeat();
+    }
+
+    @Get('host-geo')
+    getHostGeo(@Query('host') host: string) {
+        return this.coreService.geoHost(host);
     }
 }

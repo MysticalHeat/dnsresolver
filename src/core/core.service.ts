@@ -10,11 +10,12 @@ import amqplib from 'amqplib';
 import { DrizzleAsyncProvider } from 'src/db/db.provider';
 import { DB } from 'src/db/db.types';
 import { agents, tasks, tasksToAgents } from 'src/db/db.schema';
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq, gt, sql } from 'drizzle-orm';
 import { Observable, Subject } from 'rxjs';
 import { IpgeoService } from 'src/ipgeo/ipgeo.service';
 import { Cron } from '@nestjs/schedule';
 import axios, { AxiosInstance } from 'axios';
+import dns from 'dns/promises';
 
 import * as rmqConnectionsJson from './responses/rmq-connections.json';
 
@@ -257,6 +258,50 @@ export class CoreService implements OnApplicationBootstrap {
 
         return {
             id: task[0].id,
+        };
+    }
+
+    async geoHost(host: string) {
+        if (host.startsWith('http') === false) host = 'https://' + host;
+        try {
+            new URL(host);
+            const resp = await dns.lookup(new URL(host).hostname);
+            return await this.ipgeoService.getGeolocation(resp.address);
+        } catch (error) {
+            throw new BadRequestException('Invalid host');
+        }
+    }
+
+    async getTasksByAgent(agentId: string) {
+        const tasksList = await this.db.query.tasksToAgents.findMany({
+            where: eq(tasksToAgents.agentId, agentId),
+            with: {
+                agent: true,
+                task: true,
+            },
+        });
+
+        return tasksList;
+    }
+
+    async getDailyTaskCount(agentId: string) {
+        const result = await this.db
+            .select({
+                count: count(),
+            })
+            .from(tasksToAgents)
+            .where(
+                and(
+                    eq(tasksToAgents.agentId, agentId),
+                    gt(
+                        tasksToAgents.createdAt,
+                        sql`NOW() - INTERVAL '24 hours'`,
+                    ),
+                ),
+            );
+
+        return {
+            count: result[0].count,
         };
     }
 }
