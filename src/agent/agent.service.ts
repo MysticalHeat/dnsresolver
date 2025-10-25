@@ -9,6 +9,17 @@ import { DB } from 'src/db/db.types';
 export class AgentService {
     constructor(@Inject(DrizzleAsyncProvider) private readonly db: DB) {}
 
+    async getAgentList() {
+        return await this.db
+            .select({
+                ip: agents.ip,
+                location: agents.location,
+                status: agents.status,
+                lastSeen: agents.lastSeenAt,
+            })
+            .from(agents);
+    }
+
     async createAgent() {
         const rmqUrl =
             process.env.RABBITMQ_HTTP_URL || 'http://localhost:15672/api';
