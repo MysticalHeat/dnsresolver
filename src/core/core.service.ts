@@ -131,6 +131,11 @@ export class CoreService implements OnApplicationBootstrap {
                 ip: string;
             } = JSON.parse(msg!.content.toString());
 
+            if (content.ip === 'not resolved') {
+                this.rmqChannel.ack(msg!);
+                return;
+            }
+
             const geo = await this.ipgeoService.getGeolocation(content.ip);
 
             await this.db
