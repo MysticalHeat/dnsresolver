@@ -22,7 +22,7 @@ export class TasksService implements OnApplicationBootstrap {
 
         const ch = await conn.createChannel();
 
-        const ip = await ipify({ useIPv6: false });
+        const ip = await ipify({ useIPv6: false }).catch(() => 'not resolved');
 
         ch.sendToQueue(
             'agent-status',
