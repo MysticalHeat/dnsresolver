@@ -12,6 +12,7 @@ export class AgentService {
     async getAgentList() {
         return await this.db
             .select({
+                id: agents.id,
                 ip: agents.ip,
                 location: agents.location,
                 status: agents.status,
