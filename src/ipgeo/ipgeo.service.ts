@@ -1,4 +1,8 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import {
+    Injectable,
+    InternalServerErrorException,
+    OnApplicationBootstrap,
+} from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import * as ipgeoResponse from './responses/ipgeo.json';
 
@@ -16,11 +20,15 @@ export class IpgeoService implements OnApplicationBootstrap {
     }
 
     async getGeolocation(ip: string) {
-        const response = await this.geoApi.get<typeof ipgeoResponse>('', {
-            params: {
-                ip,
-            },
-        });
+        const response = await this.geoApi
+            .get<typeof ipgeoResponse>('', {
+                params: {
+                    ip,
+                },
+            })
+            .catch((err) => {
+                throw new InternalServerErrorException('Something went wrong');
+            });
         return response.data;
     }
 }
