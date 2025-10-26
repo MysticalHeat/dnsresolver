@@ -85,6 +85,9 @@ export class AdminService {
                 access_key: agent.accessKey,
                 access_secret: agent.accessSecret,
                 user,
+                rabbitmq_host:
+                    process.env.RABBITMQ_EXTERNAL_HOST || 'localhost:5672',
+                agent_image: process.env.AGENT_IMAGE || 'resolver/agent:latest',
             });
 
         command.on('stdout', (data) => {

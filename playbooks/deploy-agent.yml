@@ -61,12 +61,12 @@
       - name: Deploy agent container
         community.docker.docker_container:
             name: resolver-agent
-            image: pkg.sourcecraft.tech/cr/dfixies-vum-geryon/cn1pl4osotdb1kulrm05/resolver-agent:latest
+            image: '{{ docker_image }}'
             state: started
             restart_policy: always
             ports:
                 - '3000:3000'
             env:
-                RABBITMQ_HOST: '77.110.104.124:5672'
+                RABBITMQ_HOST: '{{ rabbitmq_host }}'
                 ACCESS_KEY: '{{ access_key }}'
                 ACCESS_SECRET: '{{ access_secret }}'
